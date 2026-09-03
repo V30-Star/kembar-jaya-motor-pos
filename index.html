@@ -756,10 +756,31 @@
     // 5. UNIVERSAL WEB BLUETOOTH ESC/POS DIRECT PRINTING (FOR ALL 58MM PRINTERS)
     // =========================================================================
     async function connectBluetoothPrinter() {
+      // 1. Cek Protokol HTTPS (Wajib untuk Web Bluetooth API)
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        Swal.fire({
+          title: 'Alihkan ke HTTPS (Aman)?',
+          html: '<p class="text-xs text-slate-600 leading-relaxed">Google Chrome & browser Android mewajibkan koneksi <b>HTTPS</b> untuk mengizinkan akses Bluetooth Web ke printer thermal.<br><br>Klik <b>Buka HTTPS</b> di bawah (jika muncul peringatan SSL, pilih <i>Lanjutkan/Advanced -> Proceed</i>).</p>',
+          icon: 'shield',
+          showCancelButton: true,
+          confirmButtonText: '🔒 Buka via HTTPS',
+          cancelButtonText: 'Batal',
+          confirmButtonColor: '#2563eb',
+          cancelButtonColor: '#64748b',
+          customClass: { popup: 'rounded-3xl shadow-2xl' }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.href = 'https://' + window.location.host + window.location.pathname;
+          }
+        });
+        return;
+      }
+
+      // 2. Cek apakah navigator.bluetooth tersedia di browser
       if (!navigator.bluetooth) {
         Swal.fire({
-          title: 'Bluetooth Web Tidak Aktif',
-          html: '<p class="text-xs text-slate-600">Browser belum mengaktifkan Web Bluetooth. Anda tetap dapat mencetak langsung melalui tombol <b>Cetak Nota</b> via dialog sistem printer HP.</p>',
+          title: 'Web Bluetooth Belum Aktif',
+          html: '<div class="text-left text-xs text-slate-600 space-y-2 leading-relaxed"><p>Fitur Web Bluetooth perlu diaktifkan sekali saja di Chrome HP:</p><ol class="list-decimal pl-4 space-y-1"><li>Buka tab baru, ketik: <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600 font-mono">chrome://flags/#enable-web-bluetooth</code></li><li>Ubah status menjadi <b>Enabled</b> lalu relaunch Chrome.</li></ol><p class="pt-1 text-slate-500"><i>Atau Anda bisa langsung tekan <b>Cetak Nota</b> via dialog print sistem HP.</i></p></div>',
           icon: 'info',
           customClass: { popup: 'rounded-3xl' }
         });
