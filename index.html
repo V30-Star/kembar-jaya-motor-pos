@@ -380,7 +380,7 @@
             btn.type = 'button';
             btn.className = "px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-700 text-[10px] font-semibold active:scale-95 transition flex items-center gap-1";
             btn.innerHTML = `<span>⚙️</span><span>${p.name}</span><span class="text-[9px] text-blue-600 font-bold">(${formatRupiah(p.price)})</span>`;
-            btn.onclick = () => addItemRow(p.name, p.price, 1);
+            btn.onclick = () => addItemRow(p.name, p.price, 0);
             container.appendChild(btn);
           });
         }
@@ -390,7 +390,7 @@
     }
 
     // 2. Add Dynamic Item Row
-    function addItemRow(name = '', price = '', qty = 1) {
+    function addItemRow(name = '', price = '', qty = 0) {
       itemCounter++;
       const container = document.getElementById('items-container');
       
@@ -432,8 +432,8 @@
             <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Qty</label>
             <input 
               type="number" 
-              min="1" 
-              value="${qty || 1}"
+              min="0" 
+              value="${qty !== undefined && qty !== null ? qty : 0}"
               class="item-qty w-full px-2 py-1.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs font-mono font-bold text-center focus:outline-none focus:border-blue-500"
               oninput="recalculateTotal()"
             />
@@ -891,7 +891,7 @@
     // Init App
     window.addEventListener('DOMContentLoaded', () => {
       loadDynamicPresets();
-      addItemRow('Oli Mesin MPX2 Matic', 55000, 1);
+      addItemRow('Oli Mesin MPX2 Matic', 55000, 0);
     });
   </script>
 </body>
