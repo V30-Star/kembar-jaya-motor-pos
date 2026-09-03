@@ -21,7 +21,9 @@
   "homepage": "https://github.com/V30-Star/kembar-jaya-motor-pos#readme",
   "dependencies": {
     "cors": "^2.8.6",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "xlsx": "^0.18.5"
   }
 }

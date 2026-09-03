@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50 text-slate-800">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Export Excel Penjualan Sparepart - Kembar Jaya Motor</title>
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-100/80 text-slate-800 flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <a href="/nota" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 text-sm font-bold transition" title="Kembali ke Kasir">
+          ←
+        </a>
+        <div>
+          <h1 class="text-sm font-extrabold text-slate-900 tracking-tight leading-none">Export Excel Penjualan</h1>
+          <p class="text-[10px] text-blue-600 font-bold mt-0.5">Kembar Jaya Motor</p>
+        </div>
+      </div>
+      <a href="/nota" class="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs border border-blue-200 transition">
+        Buka Kasir ➔
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN FILTER & EXPORT CARD -->
+  <main class="flex-1 w-full max-w-xl mx-auto px-4 py-5 space-y-5 pb-20">
+    
+    <!-- Hero Info Card -->
+    <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-3xl p-5 text-white shadow-xl space-y-2">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">📊</span>
+        <h2 class="text-lg font-extrabold">Download Laporan (.xlsx)</h2>
+      </div>
+      <p class="text-xs text-blue-100 leading-relaxed">
+        Pilih kriteria filter laporan sesuai kebutuhan: berdasarkan pelanggan, semua pelanggan, nama sparepart, rentang harga, atau rentang tanggal transaksi.
+      </p>
+    </div>
+
+    <!-- FILTER FORM -->
+    <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 space-y-5 shadow-md">
+      
+      <!-- 1. Pilihan Mode Filter Cepat -->
+      <div>
+        <label class="block text-xs font-extrabold text-slate-700 uppercase tracking-wider mb-2">
+          1. Kategori Filter Utama
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <label class="filter-chip-label flex items-center gap-2 p-2.5 rounded-2xl border border-blue-500 bg-blue-50 text-blue-700 font-bold text-xs cursor-pointer active:scale-95 transition">
+            <input type="radio" name="filter_mode" value="all" checked onchange="toggleFilterInputs()" class="text-blue-600 focus:ring-0">
+            <span>Semua Data</span>
+          </label>
+          <label class="filter-chip-label flex items-center gap-2 p-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer active:scale-95 transition">
+            <input type="radio" name="filter_mode" value="customer" onchange="toggleFilterInputs()" class="text-blue-600 focus:ring-0">
+            <span>Pelanggan</span>
+          </label>
+          <label class="filter-chip-label flex items-center gap-2 p-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer active:scale-95 transition">
+            <input type="radio" name="filter_mode" value="item" onchange="toggleFilterInputs()" class="text-blue-600 focus:ring-0">
+            <span>Per Barang</span>
+          </label>
+          <label class="filter-chip-label flex items-center gap-2 p-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer active:scale-95 transition">
+            <input type="radio" name="filter_mode" value="date" onchange="toggleFilterInputs()" class="text-blue-600 focus:ring-0">
+            <span>Tanggal</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 2. Parameter Detail (Dynamic Inputs) -->
+      <div class="space-y-4 pt-2 border-t border-slate-100">
+        
+        <!-- Filter Pelanggan Input -->
+        <div id="filter-customer-box" class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-600">
+            Nama Pelanggan (Bisa pilih atau ketik nama)
+          </label>
+          <div class="flex gap-2">
+            <input 
+              type="text" 
+              id="input-customer-filter"
+              list="customer-suggestions"
+              placeholder="Contoh: Budi / Pelanggan (kosongkan untuk semua)"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white"
+            />
+            <datalist id="customer-suggestions"></datalist>
+          </div>
+        </div>
+
+        <!-- Filter Nama Barang Input -->
+        <div id="filter-item-box" class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-600">
+            Nama Sparepart
+          </label>
+          <input 
+            type="text" 
+            id="input-item-filter"
+            list="item-suggestions"
+            placeholder="Contoh: Oli Mesin / Kampas Rem (kosongkan untuk semua)"
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white"
+          />
+          <datalist id="item-suggestions"></datalist>
+        </div>
+
+        <!-- Filter Rentang Harga Satuan -->
+        <div id="filter-price-box" class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-600">
+            Rentang Harga Barang (Opsional)
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <input 
+              type="number" 
+              id="input-min-price"
+              placeholder="Min Harga (Rp)"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white"
+            />
+            <input 
+              type="number" 
+              id="input-max-price"
+              placeholder="Maks Harga (Rp)"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white"
+            />
+          </div>
+        </div>
+
+        <!-- Filter Rentang Tanggal -->
+        <div id="filter-date-box" class="space-y-1.5">
+          <label class="block text-xs font-bold text-slate-600">
+            Rentang Tanggal Transaksi
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="block text-[10px] text-slate-400 mb-0.5">Dari Tanggal:</span>
+              <input 
+                type="date" 
+                id="input-start-date"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white"
+              />
+            </div>
+            <div>
+              <span class="block text-[10px] text-slate-400 mb-0.5">Sampai Tanggal:</span>
+              <input 
+                type="date" 
+                id="input-end-date"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white"
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Download Button -->
+      <div class="pt-2 space-y-2">
+        <button 
+          type="button" 
+          onclick="downloadExcelReport()"
+          class="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-center rounded-2xl shadow-lg shadow-emerald-600/30 active:scale-95 transition text-sm flex items-center justify-center gap-2"
+        >
+          <span>📥</span>
+          <span>Download File Excel (.xlsx)</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="resetFilterForm()"
+          class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition"
+        >
+          ↺ Reset Filter ke Default
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    // Load Autocomplete Suggestions from Database
+    async function loadFilterOptions() {
+      try {
+        const res = await fetch('/api/nota/filter-options');
+        const data = await res.json();
+        if (data.success) {
+          const custDatalist = document.getElementById('customer-suggestions');
+          const itemDatalist = document.getElementById('item-suggestions');
+
+          custDatalist.innerHTML = data.customers.map(c => `<option value="${c}"></option>`).join('');
+          itemDatalist.innerHTML = data.items.map(i => `<option value="${i}"></option>`).join('');
+        }
+      } catch (e) {
+        console.warn('Failed load filter suggestions:', e);
+      }
+    }
+
+    function getSelectedFilterMode() {
+      const radios = document.getElementsByName('filter_mode');
+      for (let r of radios) {
+        if (r.checked) return r.value;
+      }
+      return 'all';
+    }
+
+    function toggleFilterInputs() {
+      const mode = getSelectedFilterMode();
+      const labels = document.querySelectorAll('.filter-chip-label');
+
+      labels.forEach(l => {
+        const radio = l.querySelector('input');
+        if (radio.checked) {
+          l.className = "filter-chip-label flex items-center gap-2 p-2.5 rounded-2xl border border-blue-500 bg-blue-50 text-blue-700 font-bold text-xs cursor-pointer active:scale-95 transition shadow-xs";
+        } else {
+          l.className = "filter-chip-label flex items-center gap-2 p-2.5 rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer active:scale-95 transition";
+        }
+      });
+    }
+
+    function resetFilterForm() {
+      document.querySelector('input[name="filter_mode"][value="all"]').checked = true;
+      document.getElementById('input-customer-filter').value = '';
+      document.getElementById('input-item-filter').value = '';
+      document.getElementById('input-min-price').value = '';
+      document.getElementById('input-max-price').value = '';
+      document.getElementById('input-start-date').value = '';
+      document.getElementById('input-end-date').value = '';
+      toggleFilterInputs();
+    }
+
+    function downloadExcelReport() {
+      const mode = getSelectedFilterMode();
+      const customer = document.getElementById('input-customer-filter').value.trim();
+      const item = document.getElementById('input-item-filter').value.trim();
+      const minPrice = document.getElementById('input-min-price').value.trim();
+      const maxPrice = document.getElementById('input-max-price').value.trim();
+      const startDate = document.getElementById('input-start-date').value;
+      const endDate = document.getElementById('input-end-date').value;
+
+      const params = new URLSearchParams();
+      params.append('filter_mode', mode);
+
+      if (customer) params.append('customer_name', customer);
+      if (item) params.append('item_name', item);
+      if (minPrice) params.append('min_price', minPrice);
+      if (maxPrice) params.append('max_price', maxPrice);
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+
+      const downloadUrl = `/api/nota/export-excel-data?${params.toString()}`;
+
+      Swal.fire({
+        title: 'Menyiapkan File Excel...',
+        text: 'Laporan penjualan sedang di-generate dari database.',
+        icon: 'info',
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: { popup: 'rounded-3xl' }
+      }).then(() => {
+        window.location.href = downloadUrl;
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFilterOptions();
+      toggleFilterInputs();
+    });
+  </script>
+</body>
+</html>
