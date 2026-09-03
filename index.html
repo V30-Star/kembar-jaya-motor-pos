@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SweetAlert2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <style>
     body {
@@ -485,11 +487,38 @@
     }
 
     function resetAllForm() {
-      if (confirm('Yakin ingin mengosongkan form kasir?')) {
-        document.getElementById('input-customer').value = 'Pelanggan';
-        document.getElementById('items-container').innerHTML = '';
-        addItemRow();
-      }
+      Swal.fire({
+        title: 'Kosongkan Form Kasir?',
+        text: 'Seluruh daftar sparepart yang telah diinput akan dibersihkan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Bersihkan!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        customClass: {
+          popup: 'rounded-3xl shadow-2xl',
+          confirmButton: 'rounded-xl font-bold px-4 py-2.5 text-xs',
+          cancelButton: 'rounded-xl font-bold px-4 py-2.5 text-xs'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          document.getElementById('input-customer').value = 'Pelanggan';
+          document.getElementById('items-container').innerHTML = '';
+          addItemRow();
+          Swal.fire({
+            title: 'Berhasil Dikosongkan!',
+            text: 'Form kasir siap untuk transaksi baru.',
+            icon: 'success',
+            timer: 1400,
+            showConfirmButton: false,
+            customClass: {
+              popup: 'rounded-3xl'
+            }
+          });
+        }
+      });
     }
 
     // Render Single Thermal Copy (58mm)
