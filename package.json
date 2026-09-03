@@ -1,0 +1,27 @@
+{
+  "name": "notapos",
+  "version": "1.0.0",
+  "description": "Aplikasi web kasir dan pembuat nota belanja ultra-sederhana, cepat, dan mobile-friendly yang dioptimalkan khusus untuk printer thermal Bluetooth 58mm (seperti OKAY 58D, MPT-II, RPP02N, dll).",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/V30-Star/kembar-jaya-motor-pos.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/V30-Star/kembar-jaya-motor-pos/issues"
+  },
+  "homepage": "https://github.com/V30-Star/kembar-jaya-motor-pos#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "pg": "^8.23.0"
+  }
+}
