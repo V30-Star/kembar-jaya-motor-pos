@@ -555,7 +555,6 @@
         <div style="text-align: center; margin-bottom: 4px;">
           <div style="font-size: 11pt; font-weight: 800; text-transform: uppercase;">KEMBAR JAYA MOTOR</div>
           <div style="font-size: 7.5pt;">Suku Cadang & Sparepart Motor</div>
-          <div style="font-size: 7pt; margin-top: 1px;">[ ${labelCopy} ]</div>
         </div>
 
         <div class="receipt-divider"></div>
@@ -596,14 +595,7 @@
       const data = collectReceiptData();
       return `
         <div class="receipt-page">
-          <!-- SALINAN 1: UNTUK PEMBELI -->
-          ${renderSingleReceiptHTML(data, 'UNTUK PEMBELI')}
-
-          <!-- GARIS PEMISAH ROBEKAN STRUK -->
-          <div class="receipt-cut-line"></div>
-
-          <!-- SALINAN 2: ARSIP TOKO -->
-          ${renderSingleReceiptHTML(data, 'ARSIP TOKO')}
+          ${renderSingleReceiptHTML(data, '')}
         </div>
       `;
     }
@@ -845,12 +837,11 @@
       buffer += ESC + '@'; // Initialize
       buffer += ESC + 'a' + '\x01'; // Center
 
-      // Header Salinan 1
+      // Header Struk Tunggal (1 Salinan)
       buffer += ESC + '!' + '\x18'; // Double height
       buffer += 'KEMBAR JAYA MOTOR\n';
       buffer += ESC + '!' + '\x00'; // Normal
       buffer += 'Suku Cadang & Sparepart Motor\n';
-      buffer += '[ UNTUK PEMBELI ]\n';
       buffer += '--------------------------------\n';
 
       buffer += ESC + 'a' + '\x00'; // Left align
@@ -876,23 +867,7 @@
       buffer += '--------------------------------\n';
 
       buffer += ESC + 'a' + '\x01'; // Center
-      buffer += '----- Terima Kasih -----\n\n\n';
-
-      // CUT LINE
-      buffer += '- - - - - - - - - - - - - - - -\n';
-      buffer += '✂       POTONG DISINI         ✂\n';
-      buffer += '- - - - - - - - - - - - - - - -\n\n';
-
-      // Salinan 2: ARSIP TOKO
-      buffer += ESC + '!' + '\x18';
-      buffer += 'KEMBAR JAYA MOTOR\n';
-      buffer += ESC + '!' + '\x00';
-      buffer += '[ ARSIP TOKO ]\n';
-      buffer += '--------------------------------\n';
-      buffer += ESC + 'a' + '\x00';
-      buffer += `Tgl : ${data.datetime} | Plg: ${data.customer}\n`;
-      buffer += `Grand Total: Rp ${formatRupiah(data.grandTotal)}\n`;
-      buffer += '--------------------------------\n\n\n\n';
+      buffer += '----- Terima Kasih -----\n\n\n\n';
       buffer += GS + 'V' + '\x41' + '\x03'; // Paper feed & cut
 
       const encoder = new TextEncoder();
