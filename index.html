@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Kembar Jaya Motor - Kasir & Cetak Nota Thermal 58mm</title>
+  
+  <!-- Tailwind CSS CDN & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-mono-receipt {
+      font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+    }
+
+    /* =========================================================================
+       CSS MEDIA PRINT UNTUK PRINTER THERMAL 58mm (Lebar Efektif 48-58mm)
+       ========================================================================= */
+    @media print {
+      @page {
+        size: 58mm auto;
+        margin: 0;
+      }
+      html, body {
+        width: 58mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .receipt-page {
+        width: 48mm;
+        max-width: 48mm;
+        margin: 0 auto !important;
+        padding: 2mm 0 6mm 0 !important;
+        font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+        font-size: 9pt !important;
+        line-height: 1.25 !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+      }
+      .receipt-divider {
+        border-top: 1px dashed #000000 !important;
+        margin: 4px 0 !important;
+      }
+      .receipt-cut-line {
+        border-top: 2px dashed #000000 !important;
+        margin: 12px 0 10px 0 !important;
+        text-align: center;
+        position: relative;
+      }
+      .receipt-cut-line::after {
+        content: "✂ - - - - - - - - - - - - ✂";
+        display: block;
+        font-size: 8pt;
+        letter-spacing: -1px;
+        margin-top: 3px;
+      }
+    }
+
+    @media screen {
+      .print-only {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 no-print">
+    <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🏍️</span>
+        <div>
+          <h1 class="text-sm font-extrabold text-white tracking-tight leading-none">Kembar Jaya Motor</h1>
+          <p class="text-[10px] text-amber-400 font-medium mt-0.5">Kasir & Nota Thermal 58mm</p>
+        </div>
+      </div>
+      <!-- Bluetooth Connect Status Pill -->
+      <button 
+        type="button" 
+        id="btn-bluetooth-connect"
+        onclick="connectBluetoothPrinter()"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 text-xs font-bold active:scale-95 transition"
+      >
+        <span id="bt-icon">📶</span>
+        <span id="bt-label">BT Thermal</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER (MOBILE FIRST) -->
+  <main class="flex-1 w-full max-w-md mx-auto px-4 py-4 space-y-4 no-print pb-24">
+    
+    <!-- INFO BANNER -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-md">
+      <div class="space-y-0.5">
+        <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Waktu Transaksi</span>
+        <p id="live-datetime-display" class="text-xs font-extrabold text-white font-mono">-</p>
+      </div>
+      <div class="text-right">
+        <span class="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold text-[10px] uppercase">
+          58mm Ready
+        </span>
+      </div>
+    </div>
+
+    <!-- FORM INPUT KASIR -->
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-xl">
+      
+      <!-- Input Nama Pembeli -->
+      <div>
+        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+          Nama Pembeli (Opsional)
+        </label>
+        <div class="relative">
+          <input 
+            type="text" 
+            id="input-customer" 
+            placeholder="Pelanggan" 
+            value="Pelanggan"
+            class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-2xl text-white text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
+          />
+          <button 
+            type="button" 
+            onclick="document.getElementById('input-customer').value='Pelanggan'"
+            class="absolute right-3 top-2.5 text-xs text-slate-500 hover:text-slate-300"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Item Rows List -->
+      <div class="space-y-3 pt-1">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-extrabold text-slate-300 uppercase tracking-wider">
+            Daftar Barang Belanjaan
+          </h2>
+          <span id="items-count-badge" class="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-bold text-amber-400">
+            1 Item
+          </span>
+        </div>
+
+        <div id="items-container" class="space-y-3">
+          <!-- Dynamic Items Injected Here -->
+        </div>
+
+        <!-- Tombol Tambah Item -->
+        <button 
+          type="button" 
+          onclick="addItemRow()" 
+          class="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-800 border border-dashed border-slate-700 hover:border-amber-500/60 rounded-2xl text-amber-400 text-xs font-extrabold flex items-center justify-center gap-2 active:scale-98 transition shadow-sm"
+        >
+          <span>＋</span>
+          <span>Tambah Baris Barang</span>
+        </button>
+      </div>
+
+      <!-- Grand Total Display Card -->
+      <div class="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>Total Qty:</span>
+          <strong id="total-qty-display" class="text-slate-200 font-bold">0 Pcs</strong>
+        </div>
+        <div class="flex justify-between items-baseline pt-2 border-t border-slate-800/80">
+          <span class="text-xs font-extrabold text-slate-300 uppercase tracking-wider">Grand Total:</span>
+          <span id="grand-total-display" class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-red-400">
+            Rp 0
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-1 gap-2.5 pt-2">
+        <button 
+          type="button" 
+          onclick="handlePrintAction()" 
+          class="w-full py-4 px-6 bg-gradient-to-r from-amber-500 via-red-600 to-rose-600 hover:from-amber-400 hover:to-red-500 text-white font-extrabold text-center rounded-2xl shadow-xl shadow-red-600/30 active:scale-95 transition text-base flex items-center justify-center gap-2"
+        >
+          <span>🖨️</span>
+          <span>Cetak Nota Thermal (2 Salinan)</span>
+        </button>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button 
+            type="button" 
+            onclick="openLivePreviewModal()" 
+            class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
+          >
+            <span>👁️</span>
+            <span>Pratinjau Nota</span>
+          </button>
+          <button 
+            type="button" 
+            onclick="resetAllForm()" 
+            class="py-2.5 px-4 bg-slate-800/60 hover:bg-red-950/40 text-red-400 border border-slate-700 hover:border-red-500/40 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition active:scale-95"
+          >
+            <span>🗑️</span>
+            <span>Reset Form</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- QUICK PRESET SHORTCUTS -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2">
+      <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">⚡ Preset Cepat Servis & Sparepart</span>
+      <div class="flex flex-wrap gap-1.5">
+        <button type="button" onclick="addPresetItem('Oli Mesin MPX2 / Yamalube', 55000, 1)" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 hover:text-amber-400 font-medium">+ Oli (55rb)</button>
+        <button type="button" onclick="addPresetItem('Servis Ringan & Tune Up', 45000, 1)" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 hover:text-amber-400 font-medium">+ Servis (45rb)</button>
+        <button type="button" onclick="addPresetItem('Kampas Rem Depan/Belakang', 35000, 1)" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 hover:text-amber-400 font-medium">+ Kampas (35rb)</button>
+        <button type="button" onclick="addPresetItem('Busi Standar NGK', 25000, 1)" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 hover:text-amber-400 font-medium">+ Busi (25rb)</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- =========================================================================
+       MODAL PRATINJAU NOTA (DESKTOP/MOBILE PREVIEW SCREEN)
+       ========================================================================= -->
+  <div id="preview-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 no-print">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>🧾</span>
+          <h3 class="text-sm font-extrabold text-white">Pratinjau Nota (58mm)</h3>
+        </div>
+        <button type="button" onclick="closeLivePreviewModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 bg-slate-950">
+        <div id="modal-receipt-content" class="bg-white text-black p-3 rounded-xl font-mono-receipt text-xs shadow-inner">
+          <!-- Dynamic Preview Injected Here -->
+        </div>
+      </div>
+      <div class="p-4 border-t border-slate-800 flex gap-2">
+        <button type="button" onclick="closeLivePreviewModal(); window.print();" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl text-xs shadow-lg">
+          🖨️ Cetak Sekarang
+        </button>
+        <button type="button" onclick="closeLivePreviewModal()" class="py-3 px-4 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       PRINT-ONLY CONTAINER (STRUK DUAL COPY KHUSUS PRINTER THERMAL 58mm)
+       ========================================================================= -->
+  <div id="print-area" class="print-only">
+    <!-- Konten HTML Struk Dicetak Otomatis -->
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let bluetoothDevice = null;
+    let bluetoothCharacteristic = null;
+    let itemCounter = 0;
+
+    // Helper Format Rupiah
+    function formatRupiah(num) {
+      return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(num || 0);
+    }
+
+    function parseRupiahInput(str) {
+      return parseInt(String(str).replace(/[^\d]/g, ''), 10) || 0;
+    }
+
+    function getFormattedDateTimeIndonesia() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const dd = pad(now.getDate());
+      const mm = pad(now.getMonth() + 1);
+      const yyyy = now.getFullYear();
+      const hh = pad(now.getHours());
+      const min = pad(now.getMinutes());
+      return `${dd}-${mm}-${yyyy} ${hh}:${min}`;
+    }
+
+    function updateLiveClock() {
+      const el = document.getElementById('live-datetime-display');
+      if (el) el.innerText = getFormattedDateTimeIndonesia() + " WIB";
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Add Dynamic Item Row
+    function addItemRow(name = '', price = '', qty = 1) {
+      itemCounter++;
+      const container = document.getElementById('items-container');
+      
+      const row = document.createElement('div');
+      row.className = "item-row bg-slate-950 border border-slate-800 p-3 rounded-2xl space-y-2.5 relative transition";
+      row.id = `item-row-${itemCounter}`;
+
+      row.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+          <input 
+            type="text" 
+            placeholder="Nama Barang / Jasa (misal: Oli Mesin)" 
+            value="${name}"
+            class="item-name flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs font-semibold focus:outline-none focus:border-amber-400"
+            oninput="recalculateTotal()"
+          />
+          <button 
+            type="button" 
+            onclick="removeItemRow(${itemCounter})" 
+            class="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center text-xs font-bold transition"
+            title="Hapus baris"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="grid grid-cols-12 gap-2 items-center">
+          <div class="col-span-6">
+            <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Harga (Rp)</label>
+            <input 
+              type="text" 
+              placeholder="0" 
+              value="${price ? formatRupiah(price) : ''}"
+              class="item-price w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs font-mono font-bold focus:outline-none focus:border-amber-400"
+              oninput="handlePriceInput(this)"
+            />
+          </div>
+          <div class="col-span-3">
+            <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Qty</label>
+            <input 
+              type="number" 
+              min="1" 
+              value="${qty || 1}"
+              class="item-qty w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs font-mono font-bold text-center focus:outline-none focus:border-amber-400"
+              oninput="recalculateTotal()"
+            />
+          </div>
+          <div class="col-span-3 text-right">
+            <span class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Subtotal</span>
+            <span class="item-subtotal block text-xs font-extrabold text-amber-400 font-mono">Rp 0</span>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(row);
+      recalculateTotal();
+    }
+
+    function removeItemRow(id) {
+      const row = document.getElementById(`item-row-${id}`);
+      if (row) {
+        row.remove();
+        recalculateTotal();
+      }
+    }
+
+    function handlePriceInput(inputEl) {
+      const rawVal = parseRupiahInput(inputEl.value);
+      inputEl.value = rawVal > 0 ? formatRupiah(rawVal) : '';
+      recalculateTotal();
+    }
+
+    function addPresetItem(name, price, qty = 1) {
+      addItemRow(name, price, qty);
+    }
+
+    function collectReceiptData() {
+      const customer = document.getElementById('input-customer').value.trim() || 'Pelanggan';
+      const datetime = getFormattedDateTimeIndonesia();
+      const rows = document.querySelectorAll('.item-row');
+      const items = [];
+      let grandTotal = 0;
+      let totalQty = 0;
+
+      rows.forEach(r => {
+        const name = r.querySelector('.item-name').value.trim() || 'Barang';
+        const price = parseRupiahInput(r.querySelector('.item-price').value);
+        const qty = parseInt(r.querySelector('.item-qty').value, 10) || 1;
+        const subtotal = price * qty;
+
+        if (price > 0 || name) {
+          items.push({ name, price, qty, subtotal });
+          grandTotal += subtotal;
+          totalQty += qty;
+        }
+      });
+
+      return { customer, datetime, items, grandTotal, totalQty };
+    }
+
+    function recalculateTotal() {
+      const data = collectReceiptData();
+      const rows = document.querySelectorAll('.item-row');
+
+      rows.forEach(r => {
+        const price = parseRupiahInput(r.querySelector('.item-price').value);
+        const qty = parseInt(r.querySelector('.item-qty').value, 10) || 1;
+        const subtotal = price * qty;
+        r.querySelector('.item-subtotal').innerText = 'Rp ' + formatRupiah(subtotal);
+      });
+
+      document.getElementById('grand-total-display').innerText = 'Rp ' + formatRupiah(data.grandTotal);
+      document.getElementById('total-qty-display').innerText = data.totalQty + ' Pcs';
+      document.getElementById('items-count-badge').innerText = rows.length + ' Item';
+    }
+
+    function resetAllForm() {
+      if (confirm('Yakin ingin mereset seluruh form kasir?')) {
+        document.getElementById('input-customer').value = 'Pelanggan';
+        document.getElementById('items-container').innerHTML = '';
+        addItemRow();
+      }
+    }
+
+    // Generate Single Ticket Block for 58mm
+    function renderSingleReceiptHTML(data, labelCopy) {
+      let itemsHTML = '';
+      data.items.forEach(it => {
+        itemsHTML += `
+          <div style="margin-bottom: 3px;">
+            <div style="font-weight: bold; word-break: break-all;">${it.name}</div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>${it.qty} x ${formatRupiah(it.price)}</span>
+              <span style="font-weight: bold;">${formatRupiah(it.subtotal)}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      return `
+        <div style="text-align: center; margin-bottom: 4px;">
+          <div style="font-size: 11pt; font-weight: 800; text-transform: uppercase;">KEMBAR JAYA MOTOR</div>
+          <div style="font-size: 7.5pt;">Bengkel & Suku Cadang Motor</div>
+          <div style="font-size: 7pt; margin-top: 1px;">[ ${labelCopy} ]</div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div style="font-size: 8pt; margin-bottom: 2px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span>Tgl :</span>
+            <span>${data.datetime}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>Plg :</span>
+            <span style="font-weight: bold;">${data.customer}</span>
+          </div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div style="font-size: 8pt; margin: 4px 0;">
+          ${itemsHTML || '<div>- Tidak ada barang -</div>'}
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div style="font-size: 9pt; font-weight: bold; display: flex; justify-content: space-between; margin: 4px 0;">
+          <span>Grand Total:</span>
+          <span>Rp ${formatRupiah(data.grandTotal)}</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div style="text-align: center; font-size: 7.5pt; margin-top: 5px;">
+          <div>----- Terima Kasih -----</div>
+          <div style="font-size: 6.5pt; margin-top: 2px;">Barang yang dibeli tidak dapat ditukar</div>
+        </div>
+      `;
+    }
+
+    // Build Dual Receipt HTML for Printing
+    function generateFullPrintHTML() {
+      const data = collectReceiptData();
+      return `
+        <div class="receipt-page">
+          <!-- SALINAN 1: UNTUK PEMBELI -->
+          ${renderSingleReceiptHTML(data, 'UNTUK PEMBELI')}
+
+          <!-- GARIS PEMISAH ROBEKAN STRUK -->
+          <div class="receipt-cut-line"></div>
+
+          <!-- SALINAN 2: ARSIP TOKO -->
+          ${renderSingleReceiptHTML(data, 'ARSIP TOKO')}
+        </div>
+      `;
+    }
+
+    function openLivePreviewModal() {
+      const modal = document.getElementById('preview-modal');
+      const content = document.getElementById('modal-receipt-content');
+      content.innerHTML = generateFullPrintHTML();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeLivePreviewModal() {
+      const modal = document.getElementById('preview-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Handle Print Button Click
+    async function handlePrintAction() {
+      const data = collectReceiptData();
+      if (data.items.length === 0 || data.grandTotal === 0) {
+        alert('Mohon masukkan minimal 1 barang belanjaan dengan harga.');
+        return;
+      }
+
+      // Check if Bluetooth Printer is connected for direct ESC/POS print
+      if (bluetoothCharacteristic) {
+        try {
+          await printViaBluetoothDirect(data);
+          return;
+        } catch (e) {
+          console.warn('Direct Bluetooth failed, falling back to window.print()', e);
+        }
+      }
+
+      // Standard Thermal 58mm window.print()
+      const printArea = document.getElementById('print-area');
+      printArea.innerHTML = generateFullPrintHTML();
+      window.print();
+    }
+
+    // =========================================================================
+    // WEB BLUETOOTH API (DIRECT ESC/POS FOR OKAY 58D THERMAL PRINTER)
+    // =========================================================================
+    async function connectBluetoothPrinter() {
+      if (!navigator.bluetooth) {
+        alert('Web Bluetooth tidak didukung pada browser ini. Anda tetap bisa mencetak langsung via tombol Cetak Nota (window.print).');
+        return;
+      }
+
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [
+            { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
+            { namePrefix: 'MPT' },
+            { namePrefix: 'OKAY' },
+            { namePrefix: 'RPP' },
+            { namePrefix: 'POS' },
+            { namePrefix: 'Bluetooth' }
+          ],
+          optionalServices: [
+            '000018f0-0000-1000-8000-00805f9b34fb',
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+            'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+          ]
+        });
+
+        const server = await device.gatt.connect();
+        const services = await server.getPrimaryServices();
+        
+        for (const service of services) {
+          const characteristics = await service.getCharacteristics();
+          for (const char of characteristics) {
+            if (char.properties.write || char.properties.writeWithoutResponse) {
+              bluetoothCharacteristic = char;
+              break;
+            }
+          }
+          if (bluetoothCharacteristic) break;
+        }
+
+        bluetoothDevice = device;
+        document.getElementById('bt-icon').innerText = '🟢';
+        document.getElementById('bt-label').innerText = device.name || 'BT Terhubung';
+        alert(`✅ Berhasil terhubung ke printer Bluetooth: ${device.name || 'Thermal 58D'}`);
+      } catch (err) {
+        console.error('Bluetooth connection error:', err);
+        alert('Koneksi Bluetooth dibatalkan atau tidak ditemukan. Menggunakan mode cetak standar.');
+      }
+    }
+
+    // Direct ESC/POS Binary Encoder for Dual Copy
+    async function printViaBluetoothDirect(data) {
+      const ESC = '\x1B';
+      const GS = '\x1D';
+
+      let buffer = '';
+      // Init printer
+      buffer += ESC + '@';
+      buffer += ESC + 'a' + '\x01'; // Center align
+
+      // Header
+      buffer += ESC + '!' + '\x18'; // Double height + bold
+      buffer += 'KEMBAR JAYA MOTOR\n';
+      buffer += ESC + '!' + '\x00'; // Normal
+      buffer += 'Bengkel & Suku Cadang Motor\n';
+      buffer += '[ UNTUK PEMBELI ]\n';
+      buffer += '--------------------------------\n';
+
+      buffer += ESC + 'a' + '\x00'; // Left align
+      buffer += `Tgl : ${data.datetime}\n`;
+      buffer += `Plg : ${data.customer}\n`;
+      buffer += '--------------------------------\n';
+
+      // Items
+      data.items.forEach(it => {
+        buffer += `${it.name}\n`;
+        const line2 = `  ${it.qty} x ${formatRupiah(it.price)}`;
+        const subStr = `Rp ${formatRupiah(it.subtotal)}`;
+        const spaces = Math.max(1, 32 - line2.length - subStr.length);
+        buffer += line2 + ' '.repeat(spaces) + subStr + '\n';
+      });
+
+      buffer += '--------------------------------\n';
+      const totLeft = 'Grand Total:';
+      const totRight = `Rp ${formatRupiah(data.grandTotal)}`;
+      const totSpaces = Math.max(1, 32 - totLeft.length - totRight.length);
+      buffer += ESC + '!' + '\x08'; // Bold
+      buffer += totLeft + ' '.repeat(totSpaces) + totRight + '\n';
+      buffer += ESC + '!' + '\x00'; // Normal
+      buffer += '--------------------------------\n';
+
+      buffer += ESC + 'a' + '\x01'; // Center
+      buffer += '----- Terima Kasih -----\n\n\n';
+
+      // CUT LINE
+      buffer += '- - - - - - - - - - - - - - - -\n';
+      buffer += '✂       POTONG DISINI         ✂\n';
+      buffer += '- - - - - - - - - - - - - - - -\n\n';
+
+      // COPY 2: ARSIP TOKO
+      buffer += ESC + '!' + '\x18'; // Double height
+      buffer += 'KEMBAR JAYA MOTOR\n';
+      buffer += ESC + '!' + '\x00';
+      buffer += '[ ARSIP TOKO ]\n';
+      buffer += '--------------------------------\n';
+      buffer += ESC + 'a' + '\x00';
+      buffer += `Tgl : ${data.datetime} | Plg: ${data.customer}\n`;
+      buffer += `Grand Total: Rp ${formatRupiah(data.grandTotal)}\n`;
+      buffer += '--------------------------------\n\n\n\n';
+
+      // Feed & cut
+      buffer += GS + 'V' + '\x41' + '\x03';
+
+      const encoder = new TextEncoder();
+      const bytes = encoder.encode(buffer);
+
+      // Send chunked to bluetooth characteristic
+      const CHUNK_SIZE = 512;
+      for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+        const chunk = bytes.slice(i, i + CHUNK_SIZE);
+        await bluetoothCharacteristic.writeValue(chunk);
+      }
+      alert('✅ Berhasil mengirim nota langsung ke printer thermal!');
+    }
+
+    // Init with 1 sample row
+    window.addEventListener('DOMContentLoaded', () => {
+      addItemRow('Oli Mesin MPX2', 55000, 1);
+      addItemRow('Jasa Servis Ringan', 45000, 1);
+    });
+  </script>
+</body>
+</html>
