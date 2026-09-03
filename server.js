@@ -68,7 +68,7 @@ app.get('/api/nota/history', async (req, res) => {
         customer_name, 
         total_qty, 
         grand_total::float, 
-        TO_CHAR(created_at, 'DD-MM-YYYY HH24:MI') AS tanggal
+        TO_CHAR(created_at, 'DD-MM-YYYY HH24:MI') || ' WIB' AS tanggal
       FROM transactions
       ORDER BY created_at DESC
       LIMIT $1;
@@ -213,7 +213,7 @@ app.get('/api/nota/export-excel-data', async (req, res) => {
     const query = `
       SELECT 
         t.no_nota,
-        TO_CHAR(t.created_at, 'DD-MM-YYYY HH24:MI') AS tanggal,
+        TO_CHAR(t.created_at, 'DD-MM-YYYY HH24:MI') || ' WIB' AS tanggal,
         t.customer_name,
         ti.item_name,
         ti.price::float,

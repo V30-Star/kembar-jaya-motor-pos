@@ -356,12 +356,12 @@
       const yyyy = now.getFullYear();
       const hh = pad(now.getHours());
       const min = pad(now.getMinutes());
-      return `${dd}-${mm}-${yyyy} ${hh}:${min}`;
+      return `${dd}-${mm}-${yyyy} ${hh}:${min} WIB`;
     }
 
     function updateLiveClock() {
       const el = document.getElementById('live-datetime-display');
-      if (el) el.innerText = getFormattedDateTimeIndonesia() + " WIB";
+      if (el) el.innerText = getFormattedDateTimeIndonesia();
     }
     setInterval(updateLiveClock, 1000);
     updateLiveClock();
