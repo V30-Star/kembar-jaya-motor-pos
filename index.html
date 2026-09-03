@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SweetAlert2 CDN -->
+  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <style>
@@ -23,15 +23,19 @@
     }
 
     /* =========================================================================
-       CSS MEDIA PRINT PRECISE 58MM THERMAL PRINTER (Lebar Printable 48-50mm)
+       CSS MEDIA PRINT PRECISE 58MM THERMAL PRINTER (Print Area 48mm-50mm)
        ========================================================================= */
     @media print {
       @page {
         size: 58mm auto;
         margin: 0;
       }
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
       html, body {
-        width: 58mm;
+        width: 58mm !important;
+        min-width: 58mm !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
@@ -43,13 +47,14 @@
       .print-only {
         display: block !important;
       }
-      .receipt-page {
-        width: 48mm;
-        max-width: 48mm;
+      #print-area {
+        display: block !important;
+        width: 48mm !important;
+        max-width: 48mm !important;
         margin: 0 auto !important;
-        padding: 2mm 0 6mm 0 !important;
+        padding: 2mm 0 8mm 0 !important;
         font-family: 'JetBrains Mono', 'Courier New', monospace !important;
-        font-size: 9pt !important;
+        font-size: 8.5pt !important;
         line-height: 1.25 !important;
         color: #000000 !important;
         background: #ffffff !important;
@@ -75,7 +80,7 @@
 
     @media screen {
       .print-only {
-        display: none;
+        display: none !important;
       }
     }
   </style>
@@ -96,7 +101,16 @@
       </div>
       
       <!-- Action Nav Buttons -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
+        <a 
+          href="/nota/export-excel" 
+          class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold active:scale-95 transition"
+          title="Export Laporan Excel"
+        >
+          <span>📊</span>
+          <span>Excel</span>
+        </a>
+
         <button 
           type="button" 
           onclick="openHistoryModal()"
@@ -115,7 +129,7 @@
           title="Hubungkan Printer Bluetooth Thermal 58D"
         >
           <span id="bt-icon">📶</span>
-          <span id="bt-label">BT 58mm</span>
+          <span id="bt-label">BT 58D</span>
         </button>
       </div>
     </div>
@@ -130,9 +144,9 @@
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Waktu Transaksi</span>
         <p id="live-datetime-display" class="text-xs font-extrabold text-slate-800 font-mono">-</p>
       </div>
-      <div class="text-right">
-        <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-extrabold text-[10px] uppercase">
-          Toko Aktif
+      <div class="text-right flex items-center gap-1.5">
+        <span id="bt-status-pill" class="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-extrabold text-[10px] uppercase">
+          Siap Cetak
         </span>
       </div>
     </div>
@@ -205,6 +219,8 @@
 
       <!-- Action Buttons -->
       <div class="space-y-2 pt-1">
+        
+        <!-- Tombol Utama: Cetak Nota Langsung -->
         <button 
           type="button" 
           onclick="handlePrintAction()" 
@@ -223,6 +239,7 @@
             <span>👁️</span>
             <span>Pratinjau Nota</span>
           </button>
+          
           <button 
             type="button" 
             onclick="resetAllForm()" 
@@ -368,7 +385,7 @@
           });
         }
       } catch (err) {
-        console.warn('Failed load dynamic presets, using fallback:', err);
+        console.warn('Failed load dynamic presets:', err);
       }
     }
 
@@ -511,11 +528,9 @@
             title: 'Berhasil Dikosongkan!',
             text: 'Form kasir siap untuk transaksi baru.',
             icon: 'success',
-            timer: 1400,
+            timer: 1200,
             showConfirmButton: false,
-            customClass: {
-              popup: 'rounded-3xl'
-            }
+            customClass: { popup: 'rounded-3xl' }
           });
         }
       });
@@ -573,7 +588,6 @@
 
         <div style="text-align: center; font-size: 7.5pt; margin-top: 5px;">
           <div>----- Terima Kasih -----</div>
-          
         </div>
       `;
     }
@@ -608,15 +622,22 @@
       modal.classList.remove('flex');
     }
 
-    // 3. Save to Database & Print
+    // =========================================================================
+    // 3. FULL PRINT ACTION HANDLER (BLUETOOTH DIRECT + WINDOW.PRINT TRIGGER)
+    // =========================================================================
     async function handlePrintAction() {
       const data = collectReceiptData();
       if (data.items.length === 0 || data.grandTotal === 0) {
-        alert('Mohon masukkan minimal 1 barang belanjaan.');
+        Swal.fire({
+          title: 'Daftar Barang Kosong',
+          text: 'Mohon masukkan minimal 1 sparepart beserta harga.',
+          icon: 'warning',
+          customClass: { popup: 'rounded-3xl' }
+        });
         return;
       }
 
-      // Auto-save to PostgreSQL Database
+      // Auto-save transaction to PostgreSQL Database
       try {
         fetch('/api/nota/save', {
           method: 'POST',
@@ -628,24 +649,28 @@
             total_qty: data.totalQty
           })
         }).then(() => {
-          loadDynamicPresets(); // Refresh presets after new sale
+          loadDynamicPresets();
         }).catch(e => console.warn('Save db error:', e));
       } catch (e) {}
 
-      // Direct Bluetooth if connected
+      // Check if Bluetooth Direct is connected
       if (bluetoothCharacteristic) {
         try {
           await printViaBluetoothDirect(data);
           return;
         } catch (e) {
-          console.warn('Fallback window.print()', e);
+          console.warn('Bluetooth direct failed, fallback to print dialog:', e);
         }
       }
 
-      // Standard Thermal window.print()
+      // Standalone Standard Thermal Print
       const printArea = document.getElementById('print-area');
       printArea.innerHTML = generateFullPrintHTML();
-      window.print();
+
+      // Trigger Print with small timeout to guarantee DOM paint
+      setTimeout(() => {
+        window.print();
+      }, 80);
     }
 
     // 4. History Modal Loader
@@ -724,67 +749,90 @@
           ${renderSingleReceiptHTML(data, 'ARSIP TOKO')}
         </div>
       `;
-      window.print();
+      setTimeout(() => { window.print(); }, 80);
     }
 
-    // 5. Bluetooth Direct Print
+    // =========================================================================
+    // 5. UNIVERSAL WEB BLUETOOTH ESC/POS DIRECT PRINTING (FOR ALL 58MM PRINTERS)
+    // =========================================================================
     async function connectBluetoothPrinter() {
       if (!navigator.bluetooth) {
-        alert('Web Bluetooth tidak didukung browser ini. Gunakan tombol Cetak Nota standar (window.print).');
+        Swal.fire({
+          title: 'Bluetooth Web Tidak Aktif',
+          html: '<p class="text-xs text-slate-600">Browser belum mengaktifkan Web Bluetooth. Anda tetap dapat mencetak langsung melalui tombol <b>Cetak Nota</b> via dialog sistem printer HP.</p>',
+          icon: 'info',
+          customClass: { popup: 'rounded-3xl' }
+        });
         return;
       }
+
       try {
+        // Broad search to connect to any paired thermal printer (OKAY 58D, MPT, RPP, Panda, etc.)
         const device = await navigator.bluetooth.requestDevice({
-          filters: [
-            { services: ['000018f0-0000-1000-8000-00805f9b34fb'] },
-            { namePrefix: 'MPT' },
-            { namePrefix: 'OKAY' },
-            { namePrefix: 'RPP' },
-            { namePrefix: 'POS' },
-            { namePrefix: 'Bluetooth' }
-          ],
+          acceptAllDevices: true,
           optionalServices: [
-            '000018f0-0000-1000-8000-00805f9b34fb',
+            '000018f0-0000-1000-8000-00805f9b34fb', // Standard Printer Service
+            'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
             '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-            'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+            '0000ae00-0000-1000-8000-00805f9b34fb',
+            '0000e0ff-0000-1000-8000-00805f9b34fb',
+            '0000ff00-0000-1000-8000-00805f9b34fb'
           ]
         });
 
         const server = await device.gatt.connect();
         const services = await server.getPrimaryServices();
+        
         for (const service of services) {
-          const characteristics = await service.getCharacteristics();
-          for (const char of characteristics) {
-            if (char.properties.write || char.properties.writeWithoutResponse) {
-              bluetoothCharacteristic = char;
-              break;
+          try {
+            const characteristics = await service.getCharacteristics();
+            for (const char of characteristics) {
+              if (char.properties.write || char.properties.writeWithoutResponse) {
+                bluetoothCharacteristic = char;
+                break;
+              }
             }
-          }
-          if (bluetoothCharacteristic) break;
+            if (bluetoothCharacteristic) break;
+          } catch (e) {}
         }
+
         bluetoothDevice = device;
         document.getElementById('bt-icon').innerText = '🟢';
-        document.getElementById('bt-label').innerText = device.name || 'BT Terhubung';
-        alert(`✅ Terhubung ke printer thermal: ${device.name || '58mm'}`);
+        document.getElementById('bt-label').innerText = device.name ? device.name.slice(0, 8) : 'Terhubung';
+        document.getElementById('bt-status-pill').className = "px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-extrabold text-[10px] uppercase";
+        document.getElementById('bt-status-pill').innerText = 'BT 58D Siap';
+
+        Swal.fire({
+          title: 'Printer Terhubung!',
+          text: `Berhasil tersambung ke ${device.name || 'Printer Thermal 58D'}. Tekan tombol Cetak Nota untuk langsung print.`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          customClass: { popup: 'rounded-3xl' }
+        });
       } catch (err) {
-        alert('Koneksi Bluetooth dibatalkan.');
+        console.warn('Bluetooth connection error:', err);
       }
     }
 
+    // Binary ESC/POS Encoder for 58mm Dual Copy
     async function printViaBluetoothDirect(data) {
       const ESC = '\x1B';
       const GS = '\x1D';
 
       let buffer = '';
-      buffer += ESC + '@';
-      buffer += ESC + 'a' + '\x01';
-      buffer += ESC + '!' + '\x18';
+      buffer += ESC + '@'; // Initialize
+      buffer += ESC + 'a' + '\x01'; // Center
+
+      // Header Salinan 1
+      buffer += ESC + '!' + '\x18'; // Double height
       buffer += 'KEMBAR JAYA MOTOR\n';
-      buffer += ESC + '!' + '\x00';
+      buffer += ESC + '!' + '\x00'; // Normal
       buffer += 'Suku Cadang & Sparepart Motor\n';
       buffer += '[ UNTUK PEMBELI ]\n';
       buffer += '--------------------------------\n';
-      buffer += ESC + 'a' + '\x00';
+
+      buffer += ESC + 'a' + '\x00'; // Left align
       buffer += `Tgl : ${data.datetime}\n`;
       buffer += `Plg : ${data.customer}\n`;
       buffer += '--------------------------------\n';
@@ -801,17 +849,20 @@
       const totLeft = 'Grand Total:';
       const totRight = `Rp ${formatRupiah(data.grandTotal)}`;
       const totSpaces = Math.max(1, 32 - totLeft.length - totRight.length);
-      buffer += ESC + '!' + '\x08';
+      buffer += ESC + '!' + '\x08'; // Bold
       buffer += totLeft + ' '.repeat(totSpaces) + totRight + '\n';
-      buffer += ESC + '!' + '\x00';
+      buffer += ESC + '!' + '\x00'; // Normal
       buffer += '--------------------------------\n';
-      buffer += ESC + 'a' + '\x01';
+
+      buffer += ESC + 'a' + '\x01'; // Center
       buffer += '----- Terima Kasih -----\n\n\n';
 
+      // CUT LINE
       buffer += '- - - - - - - - - - - - - - - -\n';
       buffer += '✂       POTONG DISINI         ✂\n';
       buffer += '- - - - - - - - - - - - - - - -\n\n';
 
+      // Salinan 2: ARSIP TOKO
       buffer += ESC + '!' + '\x18';
       buffer += 'KEMBAR JAYA MOTOR\n';
       buffer += ESC + '!' + '\x00';
@@ -821,7 +872,7 @@
       buffer += `Tgl : ${data.datetime} | Plg: ${data.customer}\n`;
       buffer += `Grand Total: Rp ${formatRupiah(data.grandTotal)}\n`;
       buffer += '--------------------------------\n\n\n\n';
-      buffer += GS + 'V' + '\x41' + '\x03';
+      buffer += GS + 'V' + '\x41' + '\x03'; // Paper feed & cut
 
       const encoder = new TextEncoder();
       const bytes = encoder.encode(buffer);
@@ -830,7 +881,15 @@
         const chunk = bytes.slice(i, i + CHUNK_SIZE);
         await bluetoothCharacteristic.writeValue(chunk);
       }
-      alert('✅ Nota berhasil dikirim ke printer thermal Bluetooth!');
+      
+      Swal.fire({
+        title: 'Nota Berhasil Dicetak!',
+        text: 'Data telah terkirim langsung ke printer thermal 58mm.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: { popup: 'rounded-3xl' }
+      });
     }
 
     // Init App
