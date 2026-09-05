@@ -630,10 +630,12 @@
         return;
       }
 
-      // Auto-save transaction to PostgreSQL Database
+      // Auto-save or Update transaction to PostgreSQL Database
       try {
-        fetch('/api/nota/save', {
-          method: 'POST',
+        const saveUrl = editingTransactionId ? `/api/nota/update/${editingTransactionId}` : '/api/nota/save';
+        const saveMethod = editingTransactionId ? 'PUT' : 'POST';
+        fetch(saveUrl, {
+          method: saveMethod,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             customer_name: data.customer,
@@ -641,9 +643,15 @@
             grand_total: data.grandTotal,
             total_qty: data.totalQty
           })
-        }).then(() => {
+        }).then(res => res.json()).then(resData => {
+          if (resData && resData.success) {
+            console.log("Nota tersimpan/terupdate:", resData);
+            editingTransactionId = null;
+            const b = document.getElementById('edit-mode-banner');
+            if (b) b.remove();
+          }
           loadDynamicPresets();
-        }).catch(e => console.warn('Save db error:', e));
+        }).catch(e => console.warn('Save/update db error:', e));
       } catch (e) {}
 
       // Check if Bluetooth Direct is connected
@@ -706,9 +714,14 @@
               </ul>
               <div class="pt-2 flex justify-between items-center border-t border-slate-100">
                 <span class="text-[10px] text-slate-400 font-bold">${tr.total_qty} Barang Terjual</span>
-                <button type="button" onclick="reprintFromHistory(${JSON.stringify(tr).replace(/"/g, '&quot;')})" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] active:scale-95">
-                  🖨️ Cetak Ulang
-                </button>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="editFromHistory(${JSON.stringify(tr).replace(/"/g, '&quot;')})" class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 font-bold text-[10px] active:scale-95 flex items-center gap-1">
+                    ✏️ Edit / Tambah
+                  </button>
+                  <button type="button" onclick="reprintFromHistory(${JSON.stringify(tr).replace(/"/g, '&quot;')})" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] active:scale-95 flex items-center gap-1">
+                    🖨️ Cetak Ulang
+                  </button>
+                </div>
               </div>
             `;
             list.appendChild(card);
@@ -725,24 +738,41 @@
       modal.classList.remove('flex');
     }
 
-    function reprintFromHistory(tr) {
+    async function reprintFromHistory(tr) {
       closeHistoryModal();
-      const printArea = document.getElementById('print-area');
       const data = {
-        customer: tr.customer_name,
-        datetime: tr.tanggal,
-        items: tr.items.map(i => ({ name: i.item_name, price: i.price, qty: i.qty, subtotal: i.subtotal })),
-        grandTotal: tr.grand_total,
-        totalQty: tr.total_qty
+        customer: tr.customer_name || 'Pelanggan',
+        datetime: tr.tanggal || getFormattedDateTimeIndonesia(),
+        items: (tr.items || []).map(i => ({
+          name: i.item_name || i.name || 'Sparepart',
+          price: parseInt(i.price || 0, 10),
+          qty: parseInt(i.qty || 1, 10),
+          subtotal: parseInt(i.subtotal || 0, 10) || (parseInt(i.price || 0, 10) * parseInt(i.qty || 1, 10))
+        })),
+        grandTotal: parseInt(tr.grand_total || 0, 10),
+        totalQty: parseInt(tr.total_qty || 0, 10)
       };
+
+      // Direct Bluetooth Print if connected
+      if (bluetoothCharacteristic) {
+        try {
+          await printViaBluetoothDirect(data);
+          return;
+        } catch (e) {
+          console.warn('Bluetooth direct failed, fallback to window.print():', e);
+        }
+      }
+
+      // Standalone Standard Thermal Print (58mm Single Copy)
+      const printArea = document.getElementById('print-area');
       printArea.innerHTML = `
         <div class="receipt-page">
-          ${renderSingleReceiptHTML(data, 'UNTUK PEMBELI')}
-          <div class="receipt-cut-line"></div>
-          ${renderSingleReceiptHTML(data, 'ARSIP TOKO')}
+          ${renderSingleReceiptHTML(data, '')}
         </div>
       `;
-      setTimeout(() => { window.print(); }, 80);
+      setTimeout(() => {
+        window.print();
+      }, 150);
     }
 
     // =========================================================================
@@ -894,6 +924,62 @@
       loadDynamicPresets();
       addItemRow('Oli Mesin MPX2 Matic', 55000, '');
     });
-  </script>
+  
+
+    // Edit transaction from history mode
+    let editingTransactionId = null;
+
+    function editFromHistory(tr) {
+      closeHistoryModal();
+      editingTransactionId = tr.id;
+
+      // Fill customer name
+      const custInput = document.getElementById('customer-name');
+      if (custInput) custInput.value = tr.customer_name;
+
+      // Clear existing rows
+      const container = document.getElementById('items-container');
+      if (container) container.innerHTML = '';
+
+      // Populate items
+      if (tr.items && tr.items.length > 0) {
+        tr.items.forEach(it => {
+          addItemRow(it.item_name, it.price, it.qty);
+        });
+      }
+
+      recalculateTotal();
+      showEditBanner(tr.no_nota);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showEditBanner(noNota) {
+      let banner = document.getElementById('edit-mode-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'edit-mode-banner';
+        banner.className = 'mb-4 p-3 bg-amber-500 text-slate-950 font-bold rounded-2xl flex items-center justify-between shadow-lg text-xs no-print';
+        const formCard = document.querySelector('main > div') || document.querySelector('main');
+        if (formCard) formCard.insertBefore(banner, formCard.firstChild);
+      }
+      banner.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="text-base">✏️</span>
+          <span>Mode Edit Nota: <strong class="underline">${noNota}</strong> (Silakan ubah, tambah sparepart, atau sesuaikan Qty)</span>
+        </div>
+        <button type="button" onclick="cancelEditMode()" class="px-2.5 py-1 bg-slate-900 text-white hover:bg-black rounded-xl text-[10px] uppercase tracking-wider font-extrabold active:scale-95">
+          Batal Edit
+        </button>
+      `;
+    }
+
+    function cancelEditMode() {
+      editingTransactionId = null;
+      const banner = document.getElementById('edit-mode-banner');
+      if (banner) banner.remove();
+      resetNota();
+    }
+
+</script>
 </body>
 </html>
