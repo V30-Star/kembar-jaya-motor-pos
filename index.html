@@ -754,9 +754,12 @@
               </ul>
               <div class="pt-2 flex justify-between items-center border-t border-slate-100">
                 <span class="text-[10px] text-slate-400 font-bold">${tr.total_qty} Barang Terjual</span>
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                  <button type="button" onclick="deleteFromHistory(${tr.id}, '${tr.no_nota}')" class="px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-bold text-[10px] active:scale-95 flex items-center gap-1" title="Hapus Transaksi">
+                    🗑️ Hapus
+                  </button>
                   <button type="button" onclick="editFromHistory(${JSON.stringify(tr).replace(/"/g, '&quot;')})" class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 font-bold text-[10px] active:scale-95 flex items-center gap-1">
-                    ✏️ Edit / Tambah
+                    ✏️ Edit
                   </button>
                   <button type="button" onclick="reprintFromHistory(${JSON.stringify(tr).replace(/"/g, '&quot;')})" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] active:scale-95 flex items-center gap-1">
                     🖨️ Cetak Ulang
@@ -769,6 +772,62 @@
         }
       } catch (err) {
         list.innerHTML = '<div class="text-center py-8 text-xs text-red-500">Gagal mengambil histori database.</div>';
+      }
+    }
+
+
+    // Delete transaction from database
+    async function deleteFromHistory(id, noNota) {
+      const confirmResult = await Swal.fire({
+        title: 'Hapus Nota?',
+        text: `Apakah Anda yakin ingin menghapus nota ${noNota} dari database? Tindakan ini tidak dapat dibatalkan.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#DC2626',
+        cancelButtonColor: '#6B7280',
+        customClass: { popup: 'rounded-3xl' }
+      });
+
+      if (!confirmResult.isConfirmed) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/nota/history/${id}`, {
+          method: 'DELETE'
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          Swal.fire({
+            title: 'Berhasil Dihapus',
+            text: `Nota ${noNota} telah dihapus dari histori.`,
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false,
+            customClass: { popup: 'rounded-3xl' }
+          });
+          // Refresh isi modal histori
+          openHistoryModal();
+          // Refresh preset terlaris
+          loadDynamicPresets();
+        } else {
+          Swal.fire({
+            title: 'Gagal Menghapus',
+            text: json.error || 'Terjadi kesalahan saat menghapus nota.',
+            icon: 'error',
+            customClass: { popup: 'rounded-3xl' }
+          });
+        }
+      } catch (err) {
+        Swal.fire({
+          title: 'Kesalahan Jaringan',
+          text: err.message,
+          icon: 'error',
+          customClass: { popup: 'rounded-3xl' }
+        });
       }
     }
 
