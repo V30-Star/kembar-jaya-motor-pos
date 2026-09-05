@@ -674,8 +674,48 @@
       }, 80);
     }
 
-    // 4. History Modal Loader
+    // 4. History Modal Loader (Password Protected: kembarjaya123)
+    let isHistoryUnlocked = false;
+
     async function openHistoryModal() {
+      if (!isHistoryUnlocked) {
+        const { value: password } = await Swal.fire({
+          title: '🔐 Verifikasi Akses Histori',
+          text: 'Masukkan password otorisasi untuk membuka catatan histori penjualan:',
+          input: 'password',
+          inputPlaceholder: 'Ketik password histori...',
+          inputAttributes: {
+            autocapitalize: 'off',
+            autocorrect: 'off'
+          },
+          showCancelButton: true,
+          confirmButtonText: 'Buka Histori',
+          cancelButtonText: 'Batal',
+          confirmButtonColor: '#2563EB',
+          customClass: {
+            popup: 'rounded-3xl',
+            input: 'rounded-xl text-center text-sm font-mono tracking-widest'
+          }
+        });
+
+        if (!password) {
+          return;
+        }
+
+        if (password !== 'kembarjaya123') {
+          Swal.fire({
+            title: 'Password Salah',
+            text: 'Akses histori nota ditolak. Silakan masukkan password yang benar.',
+            icon: 'error',
+            confirmButtonColor: '#EF4444',
+            customClass: { popup: 'rounded-3xl' }
+          });
+          return;
+        }
+
+        isHistoryUnlocked = true;
+      }
+
       const modal = document.getElementById('history-modal');
       const list = document.getElementById('history-list-container');
       const statsSub = document.getElementById('history-stats-subtitle');
